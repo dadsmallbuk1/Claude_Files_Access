@@ -169,6 +169,7 @@ final class MainThreadWatchdog {
     private let queue = DispatchQueue(label: "MainThreadWatchdog")
     private var timer: DispatchSourceTimer?
     private var lastResponse = Date()
+    private var lastTick = Date()
     private var stallStarted: Date?
     private let lock = NSLock()
 
@@ -182,6 +183,18 @@ final class MainThreadWatchdog {
     }
 
     private func tick() {
+        // If this timer itself fired late, the whole app was suspended (it was in the
+        // background), not stuck. Start counting afresh instead of reporting a stall.
+        let now = Date()
+        lock.lock()
+        let suspended = now.timeIntervalSince(lastTick) > 2.5
+        lastTick = now
+        if suspended {
+            lastResponse = now
+            stallStarted = nil
+        }
+        lock.unlock()
+
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.lock.lock()
