@@ -41,7 +41,18 @@ npx wrangler deploy
 
 Wrangler prints your relay URL, e.g. `https://claude-files-relay.<your-subdomain>.workers.dev`. Opening it in a browser should show "Claude Files Access relay is running."
 
-> **Without a computer:** fork this repo on GitHub, then in the Cloudflare dashboard go to *Workers & Pages › Create › Import a repository*, pick your fork, and set the root directory to `relay`. Cloudflare builds and deploys it with `npx wrangler deploy`.
+**Without a computer (from the Cloudflare dashboard, works on a phone):**
+
+1. Go to **Workers & Pages › Create application** and choose **Import a repository** (GitHub). Authorize the Cloudflare GitHub app for this repository if asked.
+2. Select this repository (or your fork) and set:
+   - **Project / Worker name:** `claude-files-relay` (must match `name` in `relay/wrangler.toml`)
+   - **Branch:** `main`
+   - **Build command:** leave empty (dependencies are installed automatically)
+   - **Deploy command:** `npx wrangler deploy`
+   - **Root directory / Path** (under advanced settings): `relay`
+3. Select **Save and Deploy**. When the build finishes, the Worker page shows its URL, `https://claude-files-relay.<your-subdomain>.workers.dev`. If this is your first Worker, Cloudflare asks you to pick the `workers.dev` subdomain.
+
+After that, every push to `main` that changes the relay redeploys it automatically.
 
 ### 2. Install the app (sideload)
 
