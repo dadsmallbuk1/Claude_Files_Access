@@ -75,6 +75,7 @@ enum AppLog {
         log(
             "Built with SDK \(info["DTSDKName"] ?? "?"), Xcode \(info["DTXcode"] ?? "?") (\(info["DTXcodeBuild"] ?? "?"))"
         )
+        logEnvironment()
         NSSetUncaughtExceptionHandler { exception in
             let line = "UNCAUGHT EXCEPTION \(exception.name.rawValue): \(exception.reason ?? "")\n"
                 + exception.callStackSymbols.joined(separator: "\n") + "\n"
@@ -86,6 +87,35 @@ enum AppLog {
             }
         }
         MainThreadWatchdog.shared.start()
+    }
+}
+
+extension AppLog {
+    /// Records where the app lives and whether it can see other apps' data folders,
+    /// which tells us if it runs sandboxed or inside a host like LiveContainer.
+    static func logEnvironment() {
+        let env = ProcessInfo.processInfo.environment
+        log("Home: \(NSHomeDirectory())")
+        log("Bundle: \(Bundle.main.bundlePath)")
+        let hostKeys = env.keys.filter { $0.hasPrefix("LC") || $0.hasPrefix("LIVECONTAINER") }.sorted()
+        if !hostKeys.isEmpty {
+            log("Host environment: " + hostKeys.map { "\($0)=\(env[$0] ?? "")" }.joined(separator: ", "))
+        }
+        let parent = FolderStore.homeParent
+        DispatchQueue.global(qos: .utility).async {
+            guard let siblings = try? FileManager.default.contentsOfDirectory(
+                at: parent, includingPropertiesForKeys: nil)
+            else {
+                log("Sandboxed: cannot list \(parent.path) (other apps' folders need the Files picker)")
+                return
+            }
+            log("Not sandboxed from siblings: \(siblings.count) folders in \(parent.path)")
+            for url in siblings.prefix(40) {
+                if let label = FolderBrowserView.appLabel(for: url) {
+                    log("  \(url.lastPathComponent): \(label)")
+                }
+            }
+        }
     }
 }
 

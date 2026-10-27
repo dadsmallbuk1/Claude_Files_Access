@@ -81,6 +81,7 @@ In a chat, enable the connector from the tools menu, then ask something like:
 
 ## Using it day to day
 
+- **Running under LiveContainer?** The Files picker may open but refuse to select a folder. Either enable **Fix File Picker** in LiveContainer's settings for Claude Files, or tap **Browse Folders Directly** in the app: apps inside LiveContainer can see each other's data folders, so you can open Madeira's folder (labelled with its app ID) and tap **Share This Folder**.
 - **Keep the app open while Claude works.** iOS suspends apps in the background, which disconnects the relay (the app reconnects automatically when you return). Typical flow: run the game in Madeira → switch to Claude Files → chat with Claude. On **iPad**, put Claude Files in Split View or Slide Over next to Madeira. *Keep Screen Awake* stops the screen locking while connected.
 - **Allow Changes** off = read-only. Claude is told when changes are disabled.
 - **Undo:** ask Claude to "list recent changes" or "undo that change". Backups also appear in **Files › On My iPhone › Claude Files › Backups**, so you can restore files by hand. Clear them from the app when you don't need them.
