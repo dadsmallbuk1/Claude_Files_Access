@@ -79,6 +79,22 @@ In a chat, enable the connector from the tools menu, then ask something like:
 
 > Install DXVK 2.4 into my prefix: download it from GitHub, extract it, and copy the x64 DLLs to system32 and the x32 DLLs to syswow64.
 
+## Running the bridge inside Madeira (recommended for sideloaded installs)
+
+On iOS 27 with some signing services, the Files picker never hands a folder to a sideloaded app, so the Claude Files app can't get at Madeira's folder. The **ClaudeBridge** kit avoids that: it adds a small framework to Madeira's IPA that runs inside Madeira itself, so it can read and change Madeira's own data folder directly, and Claude can work while your game runs.
+
+1. Download the `ClaudeBridge-kit` artifact from the latest **Build** run (or a release). It contains `ClaudeBridge.framework.zip` and `inject_claude_bridge.py`.
+2. On any computer with Python 3, run:
+   ```sh
+   python inject_claude_bridge.py Madeira-0.1.3.ipa ClaudeBridge.framework.zip \
+       --connector-url https://claude-files-relay.<you>.workers.dev/<secret>/mcp
+   ```
+   Use the connector URL from the Claude Files app to keep using the connector you already added in Claude (then keep the Claude Files app closed while Madeira is open, since they share the secret), or `--relay https://claude-files-relay.<you>.workers.dev` to generate a new secret and connector URL.
+3. Sign and install the new `Madeira-0.1.3-claude.ipa` with Signulous (or your usual signer), the same way as before.
+4. Open Madeira and ask Claude to check the device status. Paths look like `Madeira/Documents/wine/drive_c/...`.
+
+The bridge logs to **Files › On My iPhone › Madeira › ClaudeBridge › bridge.log** and keeps change backups next to it. To change the relay or secret without re-patching, put a `config.json` (`{"relayURL": "...", "token": "..."}`) in that folder.
+
 ## Using it day to day
 
 - **Known issue (iOS 27.2, sideloaded installs):** the Files picker can open but never hand the chosen folder back to the app. The app logs its signing details at launch to help track this down. Until it's resolved, use the app's own folder as a hand-off point: copy files into **Files › On My iPhone › Claude Files** and Claude reaches them through the `AppData` folder; copy Claude's results back out the same way.
