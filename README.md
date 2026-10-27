@@ -119,4 +119,4 @@ cd ios && xcodegen generate && open ClaudeFilesAccess.xcodeproj
 
 Tool definitions live in `relay/src/tools.ts` (what Claude sees) and are implemented in `ios/Packages/FilesCore/Sources/FilesCore/ToolRouter.swift` and the `*Tools.swift` files next to it. Keep the two in sync.
 
-Limits: individual results are capped at ~1 MB (Cloudflare's WebSocket message limit), so `read_file` reads at most 256 KB per call and large images are downscaled before being sent to Claude.
+Limits: individual results are capped at ~1 MB to keep them a sensible size for Claude's context, so `read_file` reads at most 256 KB per call and large images are downscaled before being sent.

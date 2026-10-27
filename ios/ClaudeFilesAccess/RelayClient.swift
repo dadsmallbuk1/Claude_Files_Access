@@ -11,7 +11,8 @@ final class RelayClient {
         case failed(String)
     }
 
-    /// Largest result we try to send; Cloudflare limits WebSocket messages to about 1 MiB.
+    /// Largest result we send. Cloudflare accepts up to 32 MiB, but results this big would
+    /// swamp Claude's context, so tools are asked to page instead.
     static let maxMessageBytes = 950_000
 
     var onStateChange: ((State) -> Void)?
