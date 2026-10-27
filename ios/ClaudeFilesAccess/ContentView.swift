@@ -3,7 +3,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var showingFolderPicker = false
+    @State private var logText = ""
+    @State private var showingLog = false
     @State private var confirmNewSecret = false
     @State private var confirmClearBackups = false
     @State private var renaming: SharedFolder?
@@ -18,16 +19,11 @@ struct ContentView: View {
                 foldersSection
                 optionsSection
                 activitySection
+                logSection
                 helpSection
             }
             .navigationTitle("Claude Files Access")
-            .sheet(isPresented: $showingFolderPicker) {
-                FolderPicker(
-                    onPick: { url in model.addFolder(url) },
-                    onDismiss: { showingFolderPicker = false }
-                )
-                .ignoresSafeArea()
-            }
+            .sheet(isPresented: $showingLog) { logSheet }
             .alert("Rename folder", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Name", text: $newName)
                 Button("Save") {
@@ -151,7 +147,7 @@ struct ContentView: View {
             .onDelete { model.removeFolders(at: $0) }
 
             Button {
-                showingFolderPicker = true
+                model.presentFolderPicker(mode: .standard)
             } label: {
                 HStack {
                     Label("Add Folder", systemImage: "folder.badge.plus")
@@ -160,6 +156,13 @@ struct ContentView: View {
                         ProgressView()
                     }
                 }
+            }
+            .disabled(model.addingFolder)
+
+            Button {
+                model.presentFolderPicker(mode: .compatibility)
+            } label: {
+                Label("Add Folder (Compatibility Mode)", systemImage: "folder.badge.gearshape")
             }
             .disabled(model.addingFolder)
         } header: {
@@ -212,6 +215,49 @@ struct ContentView: View {
                     if !item.detail.isEmpty {
                         Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(4)
                     }
+                }
+            }
+        }
+    }
+
+    private var logSection: some View {
+        Section {
+            Button {
+                logText = AppLog.tail()
+                showingLog = true
+            } label: {
+                Label("View Log", systemImage: "doc.text.magnifyingglass")
+            }
+            ShareLink(item: AppLog.fileURL) {
+                Label("Share Log File", systemImage: "square.and.arrow.up")
+            }
+            Button("Clear Log", role: .destructive) { AppLog.clear() }
+        } header: {
+            Text("Log")
+        } footer: {
+            Text(
+                "Saved in Files › On My iPhone › Claude Files › Logs › app.log. Claude can also read it through the AppData folder."
+            )
+        }
+    }
+
+    private var logSheet: some View {
+        NavigationStack {
+            ScrollView {
+                Text(logText.isEmpty ? "The log is empty." : logText)
+                    .font(.caption2.monospaced())
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+            .navigationTitle("Log")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showingLog = false }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Refresh") { logText = AppLog.tail() }
                 }
             }
         }

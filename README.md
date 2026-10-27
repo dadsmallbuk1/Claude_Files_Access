@@ -85,6 +85,7 @@ In a chat, enable the connector from the tools menu, then ask something like:
 - **Allow Changes** off = read-only. Claude is told when changes are disabled.
 - **Undo:** ask Claude to "list recent changes" or "undo that change". Backups also appear in **Files › On My iPhone › Claude Files › Backups**, so you can restore files by hand. Clear them from the app when you don't need them.
 - **Activity** in the app shows every request Claude made.
+- **Log:** the app writes a log to **Files › On My iPhone › Claude Files › Logs › app.log** (view or share it from the app's *Log* section). It records launches, connection changes, tool calls, folder-picker steps and any main-thread freezes. Claude can read it too, through the built-in `AppData` folder.
 - **New secret:** *Generate New Secret* invalidates the old connector URL immediately. Update the connector in Claude afterwards.
 
 ## Tools Claude gets

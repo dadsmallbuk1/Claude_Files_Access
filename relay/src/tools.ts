@@ -346,6 +346,7 @@ export const SERVER_INSTRUCTIONS = `This server gives you access to folders in t
 
 How paths work:
 - Every path starts with a root name (a folder the user shared in the app), e.g. "Madeira/..." or "Downloads/...". Call device_status (or list_directory with an empty path) to see the roots.
+- The "AppData" root is the app's own folder: AppData/Logs/app.log is the app's log (useful if the app itself misbehaves) and AppData/Backups holds change backups.
 - The app must be open on the device. If a tool says the device is not connected, ask the user to open the Claude Files Access app and keep it open (on iPad it can sit in Split View next to Madeira).
 
 Troubleshooting tips:

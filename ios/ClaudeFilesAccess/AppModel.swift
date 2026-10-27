@@ -67,7 +67,12 @@ final class AppModel: ObservableObject {
             .appendingPathComponent("Backups", isDirectory: true)
     }
 
+    /// The app's own Documents folder (Logs and Backups), shared with Claude as a root
+    /// so it can read the app log when troubleshooting.
+    static let appDataRootName = "AppData"
+
     init() {
+        AppLog.logLaunch()
         let defaults = UserDefaults.standard
         let allowChangesSetting = defaults.object(forKey: "allowChanges") as? Bool ?? true
         relayBaseURL = defaults.string(forKey: "relayBaseURL") ?? ""
@@ -97,7 +102,10 @@ final class AppModel: ObservableObject {
             allowChanges: { shared.allowChanges },
             deviceInfo: { deviceInfo })
 
-        relay.onStateChange = { [weak self] state in self?.connection = state }
+        relay.onStateChange = { [weak self] state in
+            AppLog.log("Relay: \(state)")
+            self?.connection = state
+        }
         relay.handleCall = { [weak self] tool, arguments in
             guard let self else { return .error("The app is shutting down.") }
             return await self.run(tool: tool, arguments: arguments)
@@ -152,6 +160,7 @@ final class AppModel: ObservableObject {
     }
 
     func sceneDidChange(to phase: ScenePhase) {
+        AppLog.log("Scene phase: \(phase)")
         switch phase {
         case .active:
             endBackgroundTask()
@@ -191,6 +200,9 @@ final class AppModel: ObservableObject {
                 date: started, tool: tool, detail: result.isError ? "\(detail)\n\(result.text.prefix(200))" : detail,
                 isError: result.isError, duration: Date().timeIntervalSince(started)), at: 0)
         if activity.count > 100 { activity.removeLast(activity.count - 100) }
+        AppLog.log(
+            String(format: "Tool %@ %@ in %.2fs%@", tool, result.isError ? "FAILED" : "ok", Date().timeIntervalSince(started),
+                   detail.isEmpty ? "" : " (\(detail))"))
         if ToolRouter.mutatingTools.contains(tool) { refreshBackupSize() }
         return result
     }
@@ -198,22 +210,39 @@ final class AppModel: ObservableObject {
     // MARK: Folders
 
     func reloadFolders() {
-        shared.roots = folderStore.resolveRoots()
+        let started = Date()
+        let appData = Root(
+            name: Self.appDataRootName,
+            url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
+        let userRoots = folderStore.resolveRoots()
+        shared.roots = userRoots + [appData]
         folders = folderStore.folders
+        AppLog.log(
+            String(format: "Folders reloaded in %.2fs: %@", Date().timeIntervalSince(started),
+                   userRoots.map { "\($0.name) -> \($0.url.path)" }.description))
         refreshBackupSize()
+    }
+
+    func presentFolderPicker(mode: FolderPicker.Mode) {
+        FolderPicker.shared.present(mode: mode) { [weak self] url in self?.addFolder(url) }
     }
 
     func addFolder(_ url: URL) {
         addingFolder = true
+        AppLog.log("Adding folder \(url.path)")
         Task.detached(priority: .userInitiated) {
+            let started = Date()
             let result = Result { try FolderStore.makeBookmark(for: url) }
+            let elapsed = Date().timeIntervalSince(started)
             await MainActor.run {
                 self.addingFolder = false
                 switch result {
                 case .success(let bookmark):
+                    AppLog.log(String(format: "Bookmark created in %.2fs (%d bytes)", elapsed, bookmark.count))
                     _ = self.folderStore.add(url, bookmark: bookmark)
                     self.reloadFolders()
                 case .failure(let error):
+                    AppLog.log("Bookmark FAILED after \(elapsed)s: \(error)")
                     self.errorMessage = "Could not add the folder: \(error.localizedDescription)"
                 }
             }

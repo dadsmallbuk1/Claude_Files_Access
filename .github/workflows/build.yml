@@ -34,8 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      # Build against the newest iOS SDK available. Apps built with an older SDK run
+      # in a compatibility mode on newer iOS, which can break system views like the
+      # Files folder picker.
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_[0-9]*.app | grep -viE 'beta|release_candidate|_rc' \
+            | sed -E 's#.*/Xcode_([0-9.]+)\.app#\1 &#' | sort -V | tail -1 | cut -d' ' -f2)
+          echo "Selecting $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
 
       - name: Test FilesCore
         run: swift test --package-path ios/Packages/FilesCore
