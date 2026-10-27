@@ -5,7 +5,6 @@ struct ContentView: View {
     @EnvironmentObject private var model: AppModel
     @State private var logText = ""
     @State private var showingLog = false
-    @State private var showingBrowser = false
     @State private var confirmNewSecret = false
     @State private var confirmClearBackups = false
     @State private var renaming: SharedFolder?
@@ -25,9 +24,6 @@ struct ContentView: View {
             }
             .navigationTitle("Claude Files Access")
             .sheet(isPresented: $showingLog) { logSheet }
-            .sheet(isPresented: $showingBrowser) {
-                FolderBrowserView { url in model.addFolderPath(url) }
-            }
             .alert("Rename folder", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Name", text: $newName)
                 Button("Save") {
@@ -151,7 +147,7 @@ struct ContentView: View {
             .onDelete { model.removeFolders(at: $0) }
 
             Button {
-                model.presentFolderPicker(mode: .standard)
+                model.presentFolderPicker()
             } label: {
                 HStack {
                     Label("Add Folder", systemImage: "folder.badge.plus")
@@ -163,23 +159,11 @@ struct ContentView: View {
             }
             .disabled(model.addingFolder)
 
-            Button {
-                model.presentFolderPicker(mode: .compatibility)
-            } label: {
-                Label("Add Folder (Compatibility Mode)", systemImage: "folder.badge.gearshape")
-            }
-            .disabled(model.addingFolder)
-
-            Button {
-                showingBrowser = true
-            } label: {
-                Label("Browse Folders Directly", systemImage: "folder.badge.questionmark")
-            }
         } header: {
             Text("Shared Folders")
         } footer: {
             Text(
-                "Pick On My iPhone/iPad › Madeira (or the folder with your Wine prefix). If the picker won't select anything (common under LiveContainer), use Browse Folders Directly. Claude can only see folders listed here."
+                "Pick On My iPhone/iPad › Madeira (or the folder with your Wine prefix). Claude can only see folders listed here, plus this app's own folder (AppData)."
             )
         }
     }

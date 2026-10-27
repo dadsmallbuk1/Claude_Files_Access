@@ -91,31 +91,73 @@ enum AppLog {
 }
 
 extension AppLog {
-    /// Records where the app lives and whether it can see other apps' data folders,
-    /// which tells us if it runs sandboxed or inside a host like LiveContainer.
+    /// Records where the app lives and how it was installed.
     static func logEnvironment() {
-        let env = ProcessInfo.processInfo.environment
         log("Home: \(NSHomeDirectory())")
         log("Bundle: \(Bundle.main.bundlePath)")
-        let hostKeys = env.keys.filter { $0.hasPrefix("LC") || $0.hasPrefix("LIVECONTAINER") }.sorted()
-        if !hostKeys.isEmpty {
-            log("Host environment: " + hostKeys.map { "\($0)=\(env[$0] ?? "")" }.joined(separator: ", "))
+        logSigning()
+    }
+
+    /// Logs the provisioning profile and code-signing entitlements the installer used.
+    /// The Files picker only hands folders to apps whose signing it accepts, so this
+    /// shows how a sideloaded copy was signed.
+    static func logSigning() {
+        let profileURL = Bundle.main.bundleURL.appendingPathComponent("embedded.mobileprovision")
+        if let data = try? Data(contentsOf: profileURL), let profile = plist(in: data) {
+            let entitlements = profile["Entitlements"] as? [String: Any] ?? [:]
+            let devices = (profile["ProvisionedDevices"] as? [Any])?.count
+            log(
+                "Profile: \(profile["Name"] ?? "?"), team \(profile["TeamName"] ?? "?") \((profile["TeamIdentifier"] as? [String])?.joined(separator: ",") ?? "?"), expires \(profile["ExpirationDate"] ?? "?"), "
+                    + (profile["ProvisionsAllDevices"] as? Bool == true
+                        ? "all devices (enterprise)" : "\(devices.map(String.init) ?? "no") listed devices"))
+            log("Profile entitlements: \(describe(entitlements))")
+        } else {
+            log("Profile: none embedded (signed without a provisioning profile)")
         }
-        let parent = FolderStore.homeParent
-        DispatchQueue.global(qos: .utility).async {
-            guard let siblings = try? FileManager.default.contentsOfDirectory(
-                at: parent, includingPropertiesForKeys: nil)
-            else {
-                log("Sandboxed: cannot list \(parent.path) (other apps' folders need the Files picker)")
-                return
-            }
-            log("Not sandboxed from siblings: \(siblings.count) folders in \(parent.path)")
-            for url in siblings.prefix(40) {
-                if let label = FolderBrowserView.appLabel(for: url) {
-                    log("  \(url.lastPathComponent): \(label)")
-                }
-            }
+
+        if let executable = Bundle.main.executableURL, let entitlements = signedEntitlements(executable) {
+            log("Signed entitlements: \(describe(entitlements))")
+        } else {
+            log("Signed entitlements: none found in the executable")
         }
+    }
+
+    private static func describe(_ entitlements: [String: Any]) -> String {
+        entitlements.keys.sorted().map { key in
+            let value = entitlements[key]
+            if let array = value as? [Any] { return "\(key)=[\(array.map { "\($0)" }.joined(separator: ","))]" }
+            return "\(key)=\(value.map { "\($0)" } ?? "")"
+        }.joined(separator: "; ")
+    }
+
+    /// Finds the first XML plist inside some data (profiles are CMS-wrapped plists).
+    private static func plist(in data: Data, from start: Data.Index? = nil) -> [String: Any]? {
+        guard let open = data.range(of: Data("<?xml".utf8), in: (start ?? data.startIndex)..<data.endIndex),
+            let close = data.range(of: Data("</plist>".utf8), in: open.lowerBound..<data.endIndex)
+        else { return nil }
+        let slice = data[open.lowerBound..<close.upperBound]
+        return (try? PropertyListSerialization.propertyList(from: slice, format: nil)) as? [String: Any]
+    }
+
+    /// Reads the entitlements plist embedded in the executable's code signature, which
+    /// sits at the end of the file.
+    private static func signedEntitlements(_ executable: URL) -> [String: Any]? {
+        guard let handle = try? FileHandle(forReadingFrom: executable) else { return nil }
+        defer { try? handle.close() }
+        let size = (try? handle.seekToEnd()) ?? 0
+        let window: UInt64 = 2_000_000
+        try? handle.seek(toOffset: size > window ? size - window : 0)
+        guard let tail = try? handle.readToEnd() else { return nil }
+        var search = tail.startIndex
+        while let range = tail.range(of: Data("<?xml".utf8), in: search..<tail.endIndex) {
+            if let dict = plist(in: tail, from: range.lowerBound),
+                dict.keys.contains(where: { $0.contains("application-identifier") || $0.contains("team-identifier") })
+            {
+                return dict
+            }
+            search = range.upperBound
+        }
+        return nil
     }
 }
 

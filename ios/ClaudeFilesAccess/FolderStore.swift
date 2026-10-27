@@ -1,18 +1,11 @@
 import FilesCore
 import Foundation
 
-/// A folder the user shared: either picked in the Files picker (persisted as a
-/// security-scoped bookmark) or chosen in the built-in browser by path, which works
-/// when the app is not sandboxed from other apps (e.g. under LiveContainer).
+/// A folder the user picked in the Files app, persisted as a security-scoped bookmark.
 struct SharedFolder: Codable, Identifiable, Equatable {
     var id: UUID
     var name: String
     var bookmark: Data
-    /// Set for folders added by path.
-    var path: String?
-    /// The same location relative to the folder that contains this app's home folder,
-    /// used if the absolute path moves (e.g. the hosting app's container changed).
-    var pathFromHomeParent: String?
 }
 
 /// Keeps access to the folders the user shared, across launches.
@@ -43,16 +36,6 @@ final class FolderStore {
         for index in folders.indices {
             let folder = folders[index]
             if let url = accessedURLs[folder.id] {
-                roots.append(Root(name: folder.name, url: url))
-                continue
-            }
-            if let path = folder.path {
-                var url = URL(fileURLWithPath: path, isDirectory: true)
-                if !Self.isDirectory(url), let relative = folder.pathFromHomeParent {
-                    url = Self.homeParent.appendingPathComponent(relative, isDirectory: true)
-                }
-                guard Self.isDirectory(url) else { continue }
-                accessedURLs[folder.id] = url
                 roots.append(Root(name: folder.name, url: url))
                 continue
             }
@@ -87,28 +70,6 @@ final class FolderStore {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         return try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-    }
-
-    static var homeParent: URL {
-        URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true).deletingLastPathComponent()
-    }
-
-    private static func isDirectory(_ url: URL) -> Bool {
-        var isDir: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue
-    }
-
-    /// Adds a folder chosen in the built-in browser.
-    func addPath(_ url: URL, name: String? = nil) -> SharedFolder {
-        let path = url.standardizedFileURL.path
-        let parentPath = Self.homeParent.standardizedFileURL.path + "/"
-        var folder = SharedFolder(
-            id: UUID(), name: uniqueName(for: name ?? url.lastPathComponent), bookmark: Data(), path: path)
-        if path.hasPrefix(parentPath) { folder.pathFromHomeParent = String(path.dropFirst(parentPath.count)) }
-        accessedURLs[folder.id] = url
-        folders.append(folder)
-        save()
-        return folder
     }
 
     /// Adds a folder using a bookmark from `makeBookmark(for:)`.

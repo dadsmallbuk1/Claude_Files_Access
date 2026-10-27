@@ -223,14 +223,8 @@ final class AppModel: ObservableObject {
         refreshBackupSize()
     }
 
-    func addFolderPath(_ url: URL) {
-        let folder = folderStore.addPath(url)
-        AppLog.log("Added folder by path: \(folder.name) -> \(url.path)")
-        reloadFolders()
-    }
-
-    func presentFolderPicker(mode: FolderPicker.Mode) {
-        FolderPicker.shared.present(mode: mode) { [weak self] url in self?.addFolder(url) }
+    func presentFolderPicker() {
+        FolderPicker.shared.present { [weak self] url in self?.addFolder(url) }
     }
 
     func addFolder(_ url: URL) {
