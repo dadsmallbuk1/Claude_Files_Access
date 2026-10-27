@@ -89,6 +89,15 @@ jobs:
         run: |
           mkdir -p dist/ClaudeBridge
           cp -R build/Build/Products/Release-iphoneos/ClaudeBridge.framework dist/ClaudeBridge/
+          # The framework is injected into another app, so it may only link system
+          # libraries (FilesCore and zstd must be built into it).
+          BIN=dist/ClaudeBridge/ClaudeBridge.framework/ClaudeBridge
+          lipo -info "$BIN"
+          otool -L "$BIN"
+          if otool -L "$BIN" | tail -n +3 | grep -vE '^\s+(/usr/lib/|/System/Library/)'; then
+            echo "ClaudeBridge links a non-system library (listed above)"; exit 1
+          fi
+          nm -gU "$BIN" | grep -E 'ClaudeBridgeStarter|_ZSTD_decompressStream' | head -5
           cp tools/inject_claude_bridge.py dist/ClaudeBridge/
           cd dist/ClaudeBridge && zip -qry ../ClaudeBridge.framework.zip ClaudeBridge.framework && cd ..
           zip -qj ClaudeBridge-kit.zip ClaudeBridge.framework.zip ClaudeBridge/inject_claude_bridge.py
