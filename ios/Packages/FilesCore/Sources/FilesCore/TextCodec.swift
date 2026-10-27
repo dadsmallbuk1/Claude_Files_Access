@@ -56,7 +56,7 @@ public enum TextCodec {
             if index % 2 == 1 { oddZeros += 1 } else { evenZeros += 1 }
         }
         let pairs = bytes.count / 2
-        return oddZeros > pairs * 6 / 10 && evenZeros < pairs / 20
+        return oddZeros * 10 > pairs * 6 && evenZeros * 20 <= pairs
     }
 
     /// Whether data looks like text rather than binary.
@@ -131,6 +131,14 @@ public enum TextCodec {
             data.append(text.data(using: .windowsCP1252, allowLossyConversion: true) ?? Data(text.utf8))
         }
         return data
+    }
+}
+
+extension String {
+    /// Splits into lines on any line ending. Note that Swift treats "\r\n" as a single
+    /// Character, so `split(separator: "\n")` would not split Windows text.
+    func lines() -> [Substring] {
+        split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
     }
 }
 

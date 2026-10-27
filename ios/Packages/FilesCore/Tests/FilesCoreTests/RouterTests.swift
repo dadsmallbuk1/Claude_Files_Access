@@ -80,6 +80,10 @@ final class RouterTests: XCTestCase {
         let tail = await call("tail_file", ["path": "Madeira/wine.log", "lines": 3])
         XCTAssertTrue(tail.text.hasSuffix("line 498\nline 499\nline 500"))
 
+        try Data("first\r\nsecond\r\nthird\r\n".utf8).write(to: madeira.appendingPathComponent("crlf.log"))
+        let crlfTail = await call("tail_file", ["path": "Madeira/crlf.log", "lines": 2])
+        XCTAssertTrue(crlfTail.text.hasSuffix("]\nsecond\nthird"), crlfTail.text)
+
         let utf16 = await call("read_file", ["path": "Madeira/settings.ini"])
         XCTAssertTrue(utf16.text.contains("Width=1280"))
         XCTAssertTrue(utf16.text.contains("utf16le-bom"))
@@ -88,7 +92,7 @@ final class RouterTests: XCTestCase {
         XCTAssertTrue(byName.text.contains("Madeira/prefix/drive_c/windows/system32/d3d11.dll"))
 
         let byContent = await call("search", ["path": "Madeira", "content_pattern": "height="])
-        XCTAssertTrue(byContent.text.contains("settings.ini\n  3: Height=720"))
+        XCTAssertTrue(byContent.text.contains("settings.ini\n  3: Height=720"), byContent.text)
 
         let regex = await call("search", ["path": "Madeira", "content_pattern": "^line 49[0-9]$", "regex": true])
         XCTAssertTrue(regex.text.contains("499: line 499"))

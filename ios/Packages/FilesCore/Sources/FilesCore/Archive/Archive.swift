@@ -13,6 +13,14 @@ public struct ArchiveEntry {
     public func data() throws -> Data { try loadData() }
 }
 
+extension String {
+    func trimmingSuffix(_ suffix: Character) -> Substring {
+        var result = self[...]
+        while result.last == suffix { result = result.dropLast() }
+        return result
+    }
+}
+
 public enum ArchiveFormat: String {
     case zip
     case tar

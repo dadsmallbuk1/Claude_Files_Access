@@ -124,7 +124,7 @@ enum Tar {
 
             entries.append(
                 ArchiveEntry(
-                    path: path, kind: kind, size: UInt64(size), linkTarget: kind == .symlink ? link : nil,
+                    path: kind == .directory ? String(path.trimmingSuffix("/")) : path, kind: kind, size: UInt64(size), linkTarget: kind == .symlink ? link : nil,
                     loadData: { Data(body) }))
             offset = next
         }

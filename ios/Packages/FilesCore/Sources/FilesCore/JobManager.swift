@@ -29,9 +29,7 @@ final class JobManager: @unchecked Sendable {
         Task.detached(priority: .userInitiated) { [weak self] in
             let result = await work()
             guard let self else { return }
-            self.lock.lock()
-            job.result = result
-            self.lock.unlock()
+            self.lock.withLock { job.result = result }
         }
         return id
     }
@@ -47,9 +45,7 @@ final class JobManager: @unchecked Sendable {
     }
 
     private func finishedResult(_ id: String) -> ToolResult? {
-        lock.lock()
-        defer { lock.unlock() }
-        return jobs[id]?.result
+        lock.withLock { jobs[id]?.result }
     }
 
     func status(_ id: String) -> ToolResult {

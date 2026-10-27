@@ -121,7 +121,7 @@ enum Zip {
 
             entries.append(
                 ArchiveEntry(
-                    path: name, kind: kind, size: uncompressedSize, linkTarget: nil, loadData: load))
+                    path: kind == .directory ? String(name.trimmingSuffix("/")) : name, kind: kind, size: uncompressedSize, linkTarget: nil, loadData: load))
             offset = nameStart + nameLength + extraLength + commentLength
         }
         return entries

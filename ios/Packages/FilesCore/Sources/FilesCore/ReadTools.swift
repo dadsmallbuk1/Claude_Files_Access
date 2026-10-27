@@ -222,14 +222,14 @@ extension ToolRouter {
             let data = try readBytes(target.url, offset: start, length: Int(size - start))
             text = TextCodec.decode(data, as: start == 0 ? encoding : encoding.withoutBOM)
             if text.hasPrefix("\u{FEFF}") { text.removeFirst() }
-            lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+            lines = text.lines()
             if start > 0 { lines.removeFirst() }  // Probably a partial line.
             if lines.last?.isEmpty == true { lines.removeLast() }
             if lines.count >= wanted || start == 0 || chunk >= cap { break }
             chunk *= 4
         }
 
-        let tail = lines.suffix(wanted).map { $0.hasSuffix("\r") ? $0.dropLast() : $0 }
+        let tail = lines.suffix(wanted)
         let modified = (try? FS.info(target.url))?.modified
         let header =
             "[last \(tail.count) lines of \(target.display) - \(Format.bytes(size)), modified \(Format.date(modified))]"
@@ -304,7 +304,7 @@ extension ToolRouter {
             let text = TextCodec.decode(data).0
             var fileMatches: [String] = []
             var lineNumber = 0
-            for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            for line in text.lines() {
                 lineNumber += 1
                 guard lineMatches(line) else { continue }
                 var shown = line.trimmingCharacters(in: .whitespacesAndNewlines)
