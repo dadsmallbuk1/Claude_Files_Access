@@ -1,0 +1,53 @@
+# XcodeGen spec. Generate the Xcode project with:  cd ios && xcodegen generate
+name: ClaudeFilesAccess
+options:
+  bundleIdPrefix: io.github.claudefilesaccess
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  FilesCore:
+    path: Packages/FilesCore
+
+targets:
+  ClaudeFilesAccess:
+    type: application
+    platform: iOS
+    sources:
+      - path: ClaudeFilesAccess
+    dependencies:
+      - package: FilesCore
+    info:
+      path: ClaudeFilesAccess/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Files
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        # Makes the app's Documents folder (with Backups) visible in the Files app.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.claudefilesaccess.app
+        PRODUCT_NAME: ClaudeFilesAccess
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+    scheme: {}

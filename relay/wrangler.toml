@@ -1,0 +1,14 @@
+name = "claude-files-relay"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# One Durable Object instance per secret token. It holds the WebSocket from the
+# iOS app and forwards MCP tool calls from Claude to it.
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "DeviceRelay"
+
+# SQLite-backed Durable Objects are available on the Workers Free plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DeviceRelay"]
