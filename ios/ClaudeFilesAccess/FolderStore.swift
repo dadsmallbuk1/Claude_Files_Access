@@ -64,12 +64,19 @@ final class FolderStore {
         accessedURLs[folder.id]?.path
     }
 
-    /// Adds a folder picked with the document picker.
-    func add(_ url: URL) throws -> SharedFolder {
+    /// Creates a persistent bookmark for a folder from the document picker. This can
+    /// block on file coordination with the providing app, so call it off the main thread.
+    static func makeBookmark(for url: URL) throws -> Data {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-        let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+        return try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+    }
+
+    /// Adds a folder using a bookmark from `makeBookmark(for:)`.
+    func add(_ url: URL, bookmark: Data) -> SharedFolder {
         let folder = SharedFolder(id: UUID(), name: uniqueName(for: url.lastPathComponent), bookmark: bookmark)
+        // Keep using the picker's URL this session rather than resolving the bookmark again.
+        if url.startAccessingSecurityScopedResource() { accessedURLs[folder.id] = url }
         folders.append(folder)
         save()
         return folder

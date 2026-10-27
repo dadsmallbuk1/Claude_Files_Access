@@ -53,6 +53,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var connection: RelayClient.State = .disconnected
     @Published private(set) var activity: [ActivityItem] = []
     @Published private(set) var backupSize: String = "-"
+    @Published private(set) var addingFolder = false
     @Published var errorMessage: String?
 
     let shared: SharedState
@@ -203,11 +204,19 @@ final class AppModel: ObservableObject {
     }
 
     func addFolder(_ url: URL) {
-        do {
-            _ = try folderStore.add(url)
-            reloadFolders()
-        } catch {
-            errorMessage = "Could not add the folder: \(error.localizedDescription)"
+        addingFolder = true
+        Task.detached(priority: .userInitiated) {
+            let result = Result { try FolderStore.makeBookmark(for: url) }
+            await MainActor.run {
+                self.addingFolder = false
+                switch result {
+                case .success(let bookmark):
+                    _ = self.folderStore.add(url, bookmark: bookmark)
+                    self.reloadFolders()
+                case .failure(let error):
+                    self.errorMessage = "Could not add the folder: \(error.localizedDescription)"
+                }
+            }
         }
     }
 

@@ -1,6 +1,5 @@
 import FilesCore
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
@@ -22,8 +21,12 @@ struct ContentView: View {
                 helpSection
             }
             .navigationTitle("Claude Files Access")
-            .fileImporter(isPresented: $showingFolderPicker, allowedContentTypes: [.folder]) { result in
-                if case .success(let url) = result { model.addFolder(url) }
+            .sheet(isPresented: $showingFolderPicker) {
+                FolderPicker(
+                    onPick: { url in model.addFolder(url) },
+                    onDismiss: { showingFolderPicker = false }
+                )
+                .ignoresSafeArea()
             }
             .alert("Rename folder", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Name", text: $newName)
@@ -150,8 +153,15 @@ struct ContentView: View {
             Button {
                 showingFolderPicker = true
             } label: {
-                Label("Add Folder", systemImage: "folder.badge.plus")
+                HStack {
+                    Label("Add Folder", systemImage: "folder.badge.plus")
+                    if model.addingFolder {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
             }
+            .disabled(model.addingFolder)
         } header: {
             Text("Shared Folders")
         } footer: {
