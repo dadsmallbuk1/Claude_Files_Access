@@ -1,5 +1,7 @@
+# Relay Worker config. Lives at the repo root so Cloudflare Workers Builds can deploy
+# with default settings; Wrangler also finds it when run from relay/.
 name = "claude-files-relay"
-main = "src/index.ts"
+main = "relay/src/index.ts"
 compatibility_date = "2025-09-01"
 
 # One Durable Object instance per secret token. It holds the WebSocket from the

@@ -20,7 +20,7 @@ The relay stores nothing. It only forwards requests between Claude and the app, 
 
 | Path | What it is |
 | --- | --- |
-| `relay/` | Cloudflare Worker + Durable Object: the MCP endpoint Claude talks to. TypeScript, with tests. |
+| `relay/` | Cloudflare Worker + Durable Object: the MCP endpoint Claude talks to. TypeScript, with tests. Its Wrangler config is `wrangler.toml` at the repo root. |
 | `ios/ClaudeFilesAccess/` | SwiftUI app (universal iPhone + iPad): folder picker, connection, activity log, backups. |
 | `ios/Packages/FilesCore/` | Swift package with all the file tools, archive extraction, backups/undo. Unit-tested. |
 | `ios/project.yml` | XcodeGen spec for the Xcode project. |
@@ -45,11 +45,11 @@ Wrangler prints your relay URL, e.g. `https://claude-files-relay.<your-subdomain
 
 1. Go to **Workers & Pages › Create application** and choose **Import a repository** (GitHub). Authorize the Cloudflare GitHub app for this repository if asked.
 2. Select this repository (or your fork) and set:
-   - **Project / Worker name:** `claude-files-relay` (must match `name` in `relay/wrangler.toml`)
+   - **Project / Worker name:** `claude-files-relay` (must match `name` in `wrangler.toml`)
    - **Branch:** `main`
-   - **Build command:** leave empty (dependencies are installed automatically)
+   - **Build command:** leave empty
    - **Deploy command:** `npx wrangler deploy`
-   - **Root directory / Path** (under advanced settings): `relay`
+   - **Root directory / Path:** leave empty (the repo root holds `wrangler.toml`)
 3. Select **Save and Deploy**. When the build finishes, the Worker page shows its URL, `https://claude-files-relay.<your-subdomain>.workers.dev`. If this is your first Worker, Cloudflare asks you to pick the `workers.dev` subdomain.
 
 After that, every push to `main` that changes the relay redeploys it automatically.
