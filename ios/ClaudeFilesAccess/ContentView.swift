@@ -19,6 +19,7 @@ struct ContentView: View {
                 foldersSection
                 optionsSection
                 activitySection
+                troubleshootingSection
                 logSection
                 helpSection
             }
@@ -33,6 +34,13 @@ struct ContentView: View {
                 Button("Cancel", role: .cancel) { renaming = nil }
             } message: {
                 Text("Claude uses this name at the start of paths, e.g. \"\(newName.isEmpty ? "Madeira" : newName)/...\".")
+            }
+            .alert(
+                "Picker Test", isPresented: Binding(get: { model.noticeMessage != nil }, set: { if !$0 { model.noticeMessage = nil } })
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(model.noticeMessage ?? "")
             }
             .alert(
                 "Error", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
@@ -211,6 +219,19 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var troubleshootingSection: some View {
+        Section {
+            Button("Add Folder by Ticking It") { model.presentFolderPicker(.folderWithCheckmarks) }
+            Button("Test: Pick Any File") { model.testFilePicker() }
+        } header: {
+            Text("Troubleshooting")
+        } footer: {
+            Text(
+                "If Add Folder's Open button does nothing: try Add Folder by Ticking It (tap Select in the picker, tick the Madeira folder, then tap Open). Test: Pick Any File only checks whether the picker can return anything to this app; it doesn't add the file."
+            )
         }
     }
 

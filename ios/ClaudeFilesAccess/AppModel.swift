@@ -55,6 +55,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var backupSize: String = "-"
     @Published private(set) var addingFolder = false
     @Published var errorMessage: String?
+    @Published var noticeMessage: String?
 
     let shared: SharedState
     let folderStore = FolderStore()
@@ -223,8 +224,17 @@ final class AppModel: ObservableObject {
         refreshBackupSize()
     }
 
-    func presentFolderPicker() {
-        FolderPicker.shared.present { [weak self] url in self?.addFolder(url) }
+    func presentFolderPicker(_ kind: FolderPicker.Kind = .folder) {
+        FolderPicker.shared.present(kind) { [weak self] url in self?.addFolder(url) }
+    }
+
+    /// Picks any file without adding it, to check whether the picker can hand
+    /// anything back to this app at all.
+    func testFilePicker() {
+        FolderPicker.shared.present(.fileTest) { [weak self] url in
+            self?.noticeMessage =
+                "File picking works: the picker returned \"\(url.lastPathComponent)\". So only folder picking is affected."
+        }
     }
 
     func addFolder(_ url: URL) {
